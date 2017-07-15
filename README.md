@@ -1,2 +1,0 @@
-# AGA
-Attribute-Guided Augmentation
