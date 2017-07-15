@@ -73,7 +73,7 @@ def main(argv=None):
     args = setup_parser().parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
-    model = models.phi_model(args.dim)
+    model = models.phi(args.dim)
 
     if args.verbose: 
         print model
@@ -85,7 +85,7 @@ def main(argv=None):
 
     if args.verbose:
         cprint('Using CUDA: %s' % bool(args.cuda), 'blue')
-        cprint('Data: %d x %d'  % data["data_feat"].shape)
+        cprint('Data: %d x %d'  % data["data_feat"].shape, 'blue')
 
     X = torch.from_numpy(data['data_feat'].astype(np.float32))
 

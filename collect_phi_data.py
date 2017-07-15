@@ -30,9 +30,9 @@ def setup_parser():
         metavar='', 
         help="attribute name")
     parser.add_argument(
-        "--output_file",        
+        "--save",        
         metavar='', 
-        help='name of HDF5 output file with all data')
+        help='name of (pickled) output file with data')
     parser.add_argument(
         "--data_postfix",       
         metavar='', 
@@ -54,9 +54,9 @@ def setup_parser():
         type=int, 
         help="stop index from which to extract data")
     parser.add_argument(
-        "--binning_file",
+        "--interval_file",
         metavar='',
-        help = "file with appropriate attribute value binning intervals")
+        help = "file with appropriate attribute value intervals")
     parser.add_argument(
         "--verbose",            
         action="store_true", 
@@ -111,7 +111,7 @@ def main(argv=None):
     num = compute_num_activations(file_list)
 
     # read interval information
-    interval_data = read_interval_data(args.binning_file)
+    interval_data = read_interval_data(args.interval_file)
     
     for cnt, file_name in enumerate(file_list):
 
@@ -172,8 +172,8 @@ def main(argv=None):
         interval_data[key]['data_attr'] = data_attr
         interval_data[key]['data_feat'] = data_feat
 
-    if not args.output_file is None:
-        with open(args.output_file, 'wb') as fid:
+    if not args.save is None:
+        with open(args.save, 'wb') as fid:
             pickle.dump(interval_data, fid, pickle.HIGHEST_PROTOCOL) 
 
     if args.verbose:

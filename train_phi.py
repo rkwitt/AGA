@@ -1,8 +1,3 @@
-"""Training of the encoder-decoder part (phi).
-
-Author: rkwitt, mdixit (2017)
-"""
-
 import torch
 from torch.autograd import Variable
 import torch.utils.data as data_utils
@@ -128,7 +123,6 @@ def set_targets(data):
 def train(data, target, args):
 
     N = data['data_feat'].shape[0]
-    print N
 
     X = torch.from_numpy(data['data_feat'].astype(np.float32))
     y = torch.ones(N,1) * target
@@ -145,8 +139,8 @@ def train(data, target, args):
     if args.cuda:
         model.cuda()
     
-    loss_fn_tmm = torch.nn.MSELoss()
-    loss_fn_reg = torch.nn.MSELoss()
+    loss_fn_tmm = torch.nn.MSELoss(size_average=True)
+    loss_fn_reg = torch.nn.MSELoss(size_average=True)
     if args.cuda:
         loss_fn_tmm.cuda()
         loss_fn_reg.cuda()
@@ -214,7 +208,7 @@ def main(argv=None):
             if args.verbose:
                 cprint('Train [%.2f, %.2f] -> %.2f'  % (
                     data[key]['interval'][0],
-                    data[key]['interval'][1],target))
+                    data[key]['interval'][1],target), 'blue')
 
             tmp_phi = train(
                 data[key], 
@@ -232,6 +226,9 @@ def main(argv=None):
                     tmp_phi.state_dict(), 
                     os.path.join(args.save, out_model_file))
             
+    with open(args.save + ".pkl", 'w') as fid:
+        pickle.dump(phi_dict, fid, pickle.HIGHEST_PROTOCOL)
+
 
 if __name__ == "__main__":
     main()
