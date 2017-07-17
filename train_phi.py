@@ -25,7 +25,6 @@ class AGAEncoderDecoder(torch.nn.Module):
     def set_rho(self, from_file, dim=4096):
         self.mod_rho = models.rho(dim)
         self.mod_rho.load_state_dict(torch.load(from_file))
-        self.mod_rho.eval()
 
     def get_rho(self):
         return self.mod_rho
@@ -148,8 +147,11 @@ def train(data, target, args):
         model.get_phi().parameters(), 
         lr=args.learning_rate)
 
-    model.train()
+    model.train()           # set model to training mode
+    model.get_rho().eval()  # make sure rho is in eval mode
+
     for epoch in range(1, args.epochs):
+        adjust_learning_rate(optimizer, epoch, args.learning_rate)
         epoch_loss = 0
     
         for i, (src, tgt) in enumerate(train_loader):
