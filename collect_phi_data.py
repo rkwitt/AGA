@@ -1,3 +1,8 @@
+"""Collect data for training the attribute strength predictor function (rho).
+
+Author: rkwitt, mdixit (2017)
+"""
+
 from misc.tools import build_file_list, balanced_sampling, compute_num_activations
 
 from termcolor import colored, cprint
@@ -13,9 +18,6 @@ import os
 
 
 def setup_parser():
-    """
-    Setup the CLI parsing.
-    """
     parser = argparse.ArgumentParser(description="Create phi data.")
     parser.add_argument(
         "--img_list",           

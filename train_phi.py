@@ -1,3 +1,8 @@
+"""Training of the synthesis function (phi).
+
+Author: rkwitt, mdixit (2017)
+"""
+
 import torch
 from torch.autograd import Variable
 import torch.utils.data as data_utils
@@ -44,7 +49,7 @@ class AGAEncoderDecoder(torch.nn.Module):
 
 
 def setup_parser():
-    parser = argparse.ArgumentParser(description="Train encoder-decoder part.")
+    parser = argparse.ArgumentParser(description="Training of phi (i.e., the synthesis function)")
     parser.add_argument(
         "--data_file",          
         metavar='', 
@@ -60,7 +65,7 @@ def setup_parser():
     parser.add_argument(
         "--save",        
         metavar='', 
-        help='name of output file')
+        help='base name of output file (will be used as directory name + base name of info file')
     parser.add_argument(
         "--dim",
         type=int, 
@@ -99,12 +104,28 @@ def setup_parser():
 
 
 def adjust_learning_rate(optimizer, epoch, init_lr):
+    """
+    Adjusts the learning rate in the optimizer via 
+    dividing the learning rate by two after 50 epochs.
+
+    Args:
+        optimizer (torch.optim):    used optimizer
+        epoch (int):                current epoch counter
+        init_lr (float):            initial learning rate
+    """
     updated_lr = init_lr * (0.1 ** (epoch // 50))
     for param_group in optimizer.param_groups:
         param_group['lr'] = updated_lr
 
 
 def set_targets(data):
+    """
+    Takes the data information structure and augments it by
+    attribute value targets. For an attribute value interval,
+    the attribute value targets are the mid-points of all 
+    the other intervals, as long as the mid-point is outside
+    the current interval.
+    """
     for key0 in data:
         lo, hi = data[key0]['interval']
 

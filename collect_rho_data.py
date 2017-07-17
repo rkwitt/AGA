@@ -1,3 +1,8 @@
+"""Collect training data for attribute strength predictor (rho) training.
+
+Author: rkwitt, mdixit (2017)
+"""
+
 from misc.tools import build_file_list, balanced_sampling, compute_num_activations
 
 from termcolor import colored, cprint

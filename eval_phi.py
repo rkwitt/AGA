@@ -1,3 +1,8 @@
+"""Evaluation script for the synthesis function (phi).
+
+Author: rkwitt, mdixit (2017)
+"""
+
 import torch
 import torch.utils.data as data_utils
 from torch.autograd import Variable

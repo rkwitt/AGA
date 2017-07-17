@@ -1,3 +1,8 @@
+"""Evaluation script for the attribute strength predictor function (rho).
+
+Author: rkwitt, mdixit (2017)
+"""
+
 import torch
 from torch.autograd import Variable
 import torch.utils.data as data_utils

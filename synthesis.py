@@ -1,3 +1,8 @@
+"""Implementation of the synthesis function (phi).
+
+Author: rkwitt, mdixit (2017)
+"""
+
 import torch
 from torch.autograd import Variable
 import torch.utils.data as data_utils
@@ -27,7 +32,7 @@ def setup_parser():
         metavar='', 
         help="base directory for image data")
     parser.add_argument(
-        "--img_postfix",           
+        "--data_postfix",           
         metavar='', 
         help="postfix + file extension to identity data files")
     parser.add_argument(
@@ -83,7 +88,7 @@ def main(argv=None):
     data_file_list = build_file_list(
         args.img_list,
         args.img_base,
-        args.img_postfix)
+        args.data_postfix)
 
     img_file_list = build_file_list(
         args.img_list,
@@ -136,7 +141,7 @@ def main(argv=None):
                         i, data_file),'blue')
                 syn_data[i] = { 
                     'obj_idx': data['obj_idx'][i],
-                    'CNN_activation_org': data['CNN_activations'],
+                    'CNN_activation_org': data['CNN_activations'][i,:].reshape(1,args.dim),
                     'CNN_activation_syn': None} 
                 continue
 
@@ -159,7 +164,7 @@ def main(argv=None):
 
             syn_data[i] = { 
                 'obj_idx': data['obj_idx'][i],
-                'CNN_activation_org': data['CNN_activations'], 
+                'CNN_activation_org': data['CNN_activations'][i,:].reshape(1,args.dim),
                 'CNN_activation_syn': CNN_activation_syn}
 
         with open(img_file_list[cnt] + args.syn_postfix, 'w') as fid:
