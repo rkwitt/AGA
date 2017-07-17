@@ -49,6 +49,11 @@ def setup_parser():
         default=False, 
         dest="verbose", 
         help="berbose output")
+    parser.add_argument(
+        '--no_sampling',            
+        action='store_true', 
+        default=False, 
+        help='disables balanced sampling (default: False)')
     return parser
 
 
@@ -57,6 +62,7 @@ def main(argv=None):
         argv = sys.argv
 
     args = setup_parser().parse_args()
+    args.sampling = not args.no_sampling
 
     file_list = build_file_list(
         args.img_list,
@@ -99,18 +105,21 @@ def main(argv=None):
     if args.verbose:
         cprint('Total amount of data (%d x %d)' % data_feat.shape, 'blue')
 
-    if not args.save is None:
+    if args.sampling:      
         sample_arr = balanced_sampling(data_oidx)
         sample_idx = np.concatenate(sample_arr).ravel()
-
-        if args.verbose:
-            cprint("Sampling info: draws from %d object classes" % len(sample_arr), 'blue')
 
         data = {
             'data_feat' : data_feat[sample_idx,:],
             'data_oidx' : data_oidx[sample_idx],
-            'data_attr' : data_attr[sample_idx]
-        }
+            'data_attr' : data_attr[sample_idx]}
+    else:
+        data = {
+            'data_feat' : data_feat,
+            'data_oidx' : data_oidx,
+            'data_attr' : data_attr}
+
+    if not args.save is None:
         with open(args.save, 'wb') as fid:
             pickle.dump(data, fid, pickle.HIGHEST_PROTOCOL)
 

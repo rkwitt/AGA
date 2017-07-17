@@ -100,8 +100,6 @@ def main(argv=None):
 
     for cnt, data_file in enumerate(data_file_list):
         
-        syn_data = {}
-
         with open(data_file, 'r') as fid:
             data = pickle.load(fid)
 
@@ -120,6 +118,7 @@ def main(argv=None):
         tmp = torch.from_numpy(
             data['CNN_activations'].astype(np.float32))
 
+        syn_data = {}
         for i in np.arange(data['CNN_activations'].shape[0]):
 
             X = tmp[i,:].unsqueeze(0)            
