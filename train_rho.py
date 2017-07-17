@@ -113,7 +113,9 @@ def main(argv=None):
     if args.cuda:
         loss_fn.cuda()
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    optimizer = torch.optim.Adam(
+        model.parameters(), 
+        lr=args.learning_rate)
 
     model.train()
     for epoch in range(1, args.epochs+1):
@@ -141,7 +143,14 @@ def main(argv=None):
 
         if args.verbose:
             cprint('Loss [epoch=%.4d]=%.4f' % (epoch, epoch_loss), 'blue')
-            
+        
+    model.eval()
+    all = Variable(data_feat_th.cuda())
+    out = model(all).cpu()
+    mae = np.absolute(out.data.numpy() - data_attr_th.numpy()).mean()
+    if args.verbose:
+        cprint('MAE [train]=%.2f [m]' % mae, 'blue')    
+
     if not args.save is None:
         torch.save(model.state_dict(), args.save)
 

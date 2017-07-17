@@ -24,16 +24,15 @@ class AGAEncoderDecoder(torch.nn.Module):
 
     def set_rho(self, from_file, dim=4096):
         self.mod_rho = models.rho(dim)
-        self.mod_rho.load_state_dict(
-            torch.load(from_file))
+        self.mod_rho.load_state_dict(torch.load(from_file))
+        self.mod_rho.eval()
 
     def get_rho(self):
         return self.mod_rho
 
     def set_phi(self, from_file, dim=4096):
         self.mod_phi = models.phi(dim)
-        self.mod_phi.load_state_dict(
-            torch.load(from_file))
+        self.mod_phi.load_state_dict(torch.load(from_file))
         
     def get_phi(self):
         return self.mod_phi
@@ -199,9 +198,9 @@ def main(argv=None):
     phi_dict = {}
     for key in data:
         phi_dict[key] = {
-            'interval': [],
             'targets':  [],
-            'model_files': []
+            'model_files': [],
+            'interval': data[key]['interval']            
             }
 
         for target in data[key]['targets']:
@@ -218,7 +217,6 @@ def main(argv=None):
             out_model_file = str(uuid.uuid4()) + '.pht.tar'
 
             phi_dict[key]['targets'].append(target)
-            phi_dict[key]['interval'].append(data[key]['interval'])
             phi_dict[key]['model_files'].append(out_model_file)
 
             if not args.save is None:
