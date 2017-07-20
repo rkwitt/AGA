@@ -37,13 +37,13 @@ class AGAEncoderDecoder(torch.nn.Module):
     def set_phi(self, from_file, dim=4096):
         self.mod_phi = models.phi(dim)
         self.mod_phi.load_state_dict(torch.load(from_file))
-        
+
     def get_phi(self):
         return self.mod_phi
 
     def forward(self, x):
         concat = [
-            self.mod_phi(x), 
+            self.mod_phi(x),
             self.mod_rho(self.mod_phi(x))]
         return concat
 
@@ -51,61 +51,61 @@ class AGAEncoderDecoder(torch.nn.Module):
 def setup_parser():
     parser = argparse.ArgumentParser(description="Training of phi (i.e., the synthesis function)")
     parser.add_argument(
-        "--data_file",          
-        metavar='', 
+        "--data_file",
+        metavar='',
         help="data file to use")
     parser.add_argument(
-        "--pretrained_phi",        
-        metavar='', 
+        "--pretrained_phi",
+        metavar='',
         help='pretrained model for phi')
     parser.add_argument(
-        "--pretrained_rho",        
-        metavar='', 
+        "--pretrained_rho",
+        metavar='',
         help='pretrained model for rho')
     parser.add_argument(
-        "--save",        
-        metavar='', 
+        "--save",
+        metavar='',
         help='base name of output file (will be used as directory name + base name of info file')
     parser.add_argument(
         "--dim",
-        type=int, 
-        default=4096, 
+        type=int,
+        default=4096,
         help="dimensionality of features (default: 4096)")
     parser.add_argument(
-        "--verbose",            
-        action="store_true", 
-        default=False, 
-        dest="verbose", 
+        "--verbose",
+        action="store_true",
+        default=False,
+        dest="verbose",
         help="verbose output")
     parser.add_argument(
-        "--batch_size",         
-        metavar='', 
-        type=int, 
-        default=64, 
+        "--batch_size",
+        metavar='',
+        type=int,
+        default=64,
         help="batch size for training (default: 300)")
     parser.add_argument(
-        "--learning_rate",      
-        metavar='', 
-        type=float, 
-        default=1e-3, 
+        "--learning_rate",
+        metavar='',
+        type=float,
+        default=1e-3,
         help="learning rate (default: 0.001)")
     parser.add_argument(
-        "--epochs",             
-        metavar='', 
-        type=int, 
-        default=50, 
+        "--epochs",
+        metavar='',
+        type=int,
+        default=50,
         help="#epochs to train (default: 50")
     parser.add_argument(
-        '--no_cuda',            
-        action='store_true', 
-        default=False, 
+        '--no_cuda',
+        action='store_true',
+        default=False,
         help='disables CUDA training (default: False)')
     return parser
 
 
 def adjust_learning_rate(optimizer, epoch, init_lr):
     """
-    Adjusts the learning rate in the optimizer via 
+    Adjusts the learning rate in the optimizer via
     dividing the learning rate by two after 50 epochs.
 
     Args:
@@ -122,7 +122,7 @@ def set_targets(data):
     """
     Takes the data information structure and augments it by
     attribute value targets. For an attribute value interval,
-    the attribute value targets are the mid-points of all 
+    the attribute value targets are the mid-points of all
     the other intervals, as long as the mid-point is outside
     the current interval.
     """
@@ -135,7 +135,7 @@ def set_targets(data):
             target_candidate = (lo_tmp + hi_tmp) / 2.0
             if target_candidate > hi or target_candidate < lo:
                 targets.append(target_candidate)
-        
+
         data[key0]['targets'] = targets
 
 
@@ -148,8 +148,8 @@ def train(data, target, args):
 
     train = data_utils.TensorDataset(X, y)
     train_loader = data_utils.DataLoader(
-        train, 
-        batch_size=args.batch_size, 
+        train,
+        batch_size=args.batch_size,
         shuffle=True)
 
     model = AGAEncoderDecoder()
@@ -157,7 +157,7 @@ def train(data, target, args):
     model.set_rho(args.pretrained_rho, args.dim)
     if args.cuda:
         model.cuda()
-    
+
     loss_fn_tmm = torch.nn.MSELoss(size_average=True)
     loss_fn_reg = torch.nn.MSELoss(size_average=True)
     if args.cuda:
@@ -165,7 +165,7 @@ def train(data, target, args):
         loss_fn_reg.cuda()
 
     optimizer = torch.optim.Adam(
-        model.get_phi().parameters(), 
+        model.get_phi().parameters(),
         lr=args.learning_rate)
 
     model.train()           # set model to training mode
@@ -174,9 +174,9 @@ def train(data, target, args):
     for epoch in range(1, args.epochs):
         adjust_learning_rate(optimizer, epoch, args.learning_rate)
         epoch_loss = 0
-    
+
         for i, (src, tgt) in enumerate(train_loader):
-            
+
             if args.cuda:
                 src = src.cuda()
                 tgt = tgt.cuda()
@@ -185,7 +185,7 @@ def train(data, target, args):
             tgt_var = Variable(tgt)
 
             out_var = model(src_var)
-            
+
             loss_tmm = loss_fn_tmm(out_var[1], tgt_var)
             loss_reg = loss_fn_reg(out_var[0], src_var)
             loss = 0.7*loss_reg + 0.3*loss_tmm
@@ -223,7 +223,7 @@ def main(argv=None):
         phi_dict[key] = {
             'targets':  [],
             'model_files': [],
-            'interval': data[key]['interval']            
+            'interval': data[key]['interval']
             }
 
         for target in data[key]['targets']:
@@ -233,10 +233,10 @@ def main(argv=None):
                     data[key]['interval'][1],target), 'blue')
 
             tmp_phi = train(
-                data[key], 
-                target, 
+                data[key],
+                target,
                 args)
-            
+
             out_model_file = str(uuid.uuid4()) + '.pht.tar'
 
             phi_dict[key]['targets'].append(target)
@@ -244,20 +244,12 @@ def main(argv=None):
 
             if not args.save is None:
                 torch.save(
-                    tmp_phi.state_dict(), 
+                    tmp_phi.state_dict(),
                     os.path.join(args.save, out_model_file))
-            
+
     with open(args.save + ".pkl", 'w') as fid:
         pickle.dump(phi_dict, fid, pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-    

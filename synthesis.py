@@ -24,44 +24,44 @@ import sys
 def setup_parser():
     parser = argparse.ArgumentParser(description='Synthesis function')
     parser.add_argument(
-        "--img_list",           
-        metavar='', 
+        "--img_list",
+        metavar='',
         help="list with image names (no extension)")
     parser.add_argument(
-        "--img_base",           
-        metavar='', 
+        "--img_base",
+        metavar='',
         help="base directory for image data")
     parser.add_argument(
-        "--data_postfix",           
-        metavar='', 
+        "--data_postfix",
+        metavar='',
         help="postfix + file extension to identity data files")
     parser.add_argument(
-        "--syn_postfix",           
-        metavar='', 
+        "--syn_postfix",
+        metavar='',
         help="postfix + file extension image file name")
     parser.add_argument(
-        "--phi_model",           
-        metavar='', 
+        "--phi_model",
+        metavar='',
         help="directory name for phi models")
     parser.add_argument(
-        "--rho_model",           
-        metavar='', 
+        "--rho_model",
+        metavar='',
         help="filename of trained rho model")
     parser.add_argument(
-        "--verbose",            
-        action="store_true", 
-        default=False, 
-        dest="verbose", 
+        "--verbose",
+        action="store_true",
+        default=False,
+        dest="verbose",
         help="enables verbose output")
     parser.add_argument(
         "--dim",
-        type=int, 
-        default=4096, 
+        type=int,
+        default=4096,
         help="dimensionality of features (default: 4096)")
     parser.add_argument(
-        '--no_cuda',            
-        action='store_true', 
-        default=False, 
+        '--no_cuda',
+        action='store_true',
+        default=False,
         help='disables CUDA training (default: False)')
     return parser
 
@@ -104,45 +104,57 @@ def main(argv=None):
                 args.phi_model + '.pkl'),'blue')
 
     for cnt, data_file in enumerate(data_file_list):
-        
+
+        # load data file
         with open(data_file, 'r') as fid:
             data = pickle.load(fid)
 
+        # check if we have valid features
         if not data['is_valid']:
             if args.verbose:
                 cprint("Data file {} invalid ... skipping".format(
                     data_file), 'blue')
             continue
 
+        # load attribute strength predictor + set to eval mode
         rho_model = models.rho(args.dim)
         rho_model.load_state_dict(torch.load(args.rho_model))
         if args.cuda:
             rho_model.cuda()
         rho_model.eval()
 
+        # get all available features
         tmp = torch.from_numpy(
             data['CNN_activations'].astype(np.float32))
 
+        #
+        # step through one feature vector at a time and
+        #   1) predict attribute
+        #   2) select appropriate phi
+        #   3) call phi for all available targets
+        #
         syn_data = {}
         for i in np.arange(data['CNN_activations'].shape[0]):
 
-            X = tmp[i,:].unsqueeze(0)            
+            X = tmp[i,:].unsqueeze(0)
             if args.cuda:
                 X = X.cuda()
             X = Variable(X)
-            
+
             attr_pred = rho_model(X)
             attr_pred = attr_pred.data.cpu().numpy().flatten()
-            
+
             model_files = get_phi_models(phi_dict,attr_pred[0])
+
+            # if no appropriate phi is available, just keep the original features
             if model_files is None:
                 if args.verbose:
                     cprint("No valid model for activation {} from {}".format(
                         i, data_file),'blue')
-                syn_data[i] = { 
+                syn_data[i] = {
                     'obj_idx': data['obj_idx'][i],
                     'CNN_activation_org': data['CNN_activations'][i,:].reshape(1,args.dim),
-                    'CNN_activation_syn': None} 
+                    'CNN_activation_syn': None}
                 continue
 
             CNN_activation_syn = np.zeros((len(model_files), args.dim))
@@ -151,10 +163,9 @@ def main(argv=None):
                 phi_model = models.phi(args.dim)
                 phi_model.load_state_dict(
                     torch.load(os.path.join(args.phi_model, model_file)))
-                phi_model.eval()
-
                 if args.cuda:
                     phi_model.cuda()
+                phi_model.eval()
 
                 CNN_activation_syn[j,:] = phi_model(X).data.cpu().numpy()
 
@@ -162,22 +173,15 @@ def main(argv=None):
                 cprint("Synthesized {} activations for {} of {}".format(
                     CNN_activation_syn.shape[0], i, data_file), 'blue')
 
-            syn_data[i] = { 
+            # store original + AGA-syn. features indexed by their occurrence
+            syn_data[i] = {
                 'obj_idx': data['obj_idx'][i],
                 'CNN_activation_org': data['CNN_activations'][i,:].reshape(1,args.dim),
                 'CNN_activation_syn': CNN_activation_syn}
 
         with open(img_file_list[cnt] + args.syn_postfix, 'w') as fid:
-            pickle.dump(syn_data, fid, pickle.HIGHEST_PROTOCOL) 
-            
+            pickle.dump(syn_data, fid, pickle.HIGHEST_PROTOCOL)
+
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-    
