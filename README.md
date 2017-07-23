@@ -1,6 +1,6 @@
 # AGA : Attribute-Guided Augmentation
 
-This repository contains a PyTorch implementation of
+This repository contains a (preliminary) PyTorch implementation of
 
 ```
 @inproceedings{Dixit17a,	
