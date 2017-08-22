@@ -10,7 +10,9 @@ This repository contains a PyTorch implementation of
 	year      = 2017}
 ```
 
-**Disclaimer**: This documentation is still in development! 
+- [Paper](http://www.svcl.ucsd.edu/publications/conference/2017/AGA/AGA_final.pdf)
+- [Talk](https://youtu.be/F3ThW3RLSAU?t=26)
+- Presentation (tbd).
 
 ## Requirements
 
