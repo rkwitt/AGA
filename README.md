@@ -30,9 +30,12 @@ We provide a couple of files that have already prepared SUNRGBD data and a
 Fast-RCNN model, finetuned to a selection of SUNRGBD object classes. These
 files can we downloaded via
 
-```bash
-tools/fetch_prepared_data.sh
-```
+- [SUNRGBD images](https://drive.google.com/file/d/0BxHF82gaPzgScVJ5LXVCWkRsaE0/view?usp=sharing)
+- [Finetuned VGG16 model](https://drive.google.com/file/d/0BxHF82gaPzgSY2gySFpQU0hJOVU/view?usp=sharing)
+
+We will assume, from now own, that the images are unpacked into `/data/images/`. The 
+finetuned model has to be put into the `<PATH_TO_FAST_RCNN_DIR>/data/fast_rcnn_models`
+folder.
 
 ## Running Fast-RCNN
 
@@ -40,7 +43,7 @@ Say, you have unpacked the original SUNRGBD images to `/data/images`, i.e., the
 directory should contain `image_00001.jpg` to `image_10335.jpg`. We also assume
 that you have run *SelectiveSearch* on each image (in MATLAB) and stored the 
 bounding box proposals for each image as `image_00001_ss_boxes.mat` in the same
-directory (i.e., `/data/images`).
+folder (i.e., `/data/images`).
 
 First, we create a file which contains all image filenames without extension.
 
@@ -52,7 +55,9 @@ find . -name '*.jpg' -exec basename {} .jpg \; > image_list.txt
 Next, we run the Fast-RCNN detector with
 
 ```bash
-cd <PATH_TO_FAST_RCNN>
+cd <PATH_TO_AGA_DIR>
+cp misc/object_features.py <PATH_TO_FAST_RCNN_DIR>/tools
+cd <PATH_TO_FAST_RCNN_DIR>
 python tools/object_features.py
 ```
 
@@ -63,7 +68,7 @@ finetuned on.
 ## Collecting data for AGA training
 
 ```bash
-cd <AGA_BASE_DIRECTORY>
+cd <AGA_BASE_DIR>
 python collect_train.py \ 
 	--img_meta datasets/SUNRGBD/SUNRGBD_meta.pkl \
 	--img_list /data/images/allimgs.txt \
