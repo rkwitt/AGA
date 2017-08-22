@@ -82,6 +82,8 @@ def main(argv=None):
         base=args.img_base,
         postfix=args.label_postfix)
 
+    mylab = []
+
     for cnt,_ in enumerate(img_files):
 
         detections = {
@@ -101,6 +103,8 @@ def main(argv=None):
         data = loadmat(img_feat_files[cnt])['CNN_feature']
         labels = list(loadmat(img_label_files[cnt])['labels'].flatten()-1)
 
+        mylab += list(labels)
+
         detections['CNN_activations'] = data
         detections['obj_idx'] = list(labels)
         detections['obj_cls'] = [object_class_names[l] for l in labels]
@@ -118,6 +122,7 @@ def main(argv=None):
         with open(outfile, 'wb') as fid:
             pickle.dump(detections, fid, pickle.HIGHEST_PROTOCOL)
 
+    print np.histogram(mylab,[0,1,2,3,4,5,6,7,8,9,10])
 
 if __name__ == "__main__":
     main()

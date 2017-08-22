@@ -126,7 +126,6 @@ def main(argv=None):
         tgt_var = Variable(tgt)
 
         out_var = model(src_var)
-        
         tmp_mae = (out_var - tgt_var).abs().cpu().data.numpy()
 
         i0 = i*args.batch_size

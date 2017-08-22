@@ -2,7 +2,7 @@
 
 Author: rkwitt, mdixit (2017)
 """
-
+  
 from misc.tools import build_file_list, balanced_sampling, compute_num_activations
 
 from termcolor import colored, cprint
@@ -103,6 +103,8 @@ def main(argv=None):
         N_current = data['CNN_activations'].shape[0]
         data_feat[feat_cnt:feat_cnt+N_current,:] = data['CNN_activations']
         data_oidx[feat_cnt:feat_cnt+N_current] = data['obj_idx']
+        
+        assert len(data['attributes']) == N_current        
         for j, tmp in enumerate(data['attributes']):
             data_attr[feat_cnt+j] = tmp[args.attribute]
         feat_cnt += N_current

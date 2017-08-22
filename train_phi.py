@@ -155,11 +155,9 @@ def train(data, target, args):
     model = AGAEncoderDecoder()
     model.set_phi(args.pretrained_phi, args.dim)
     model.set_rho(args.pretrained_rho, args.dim)
-    if args.cuda:
-        model.cuda()
 
-    loss_fn_tmm = torch.nn.MSELoss(size_average=True)
-    loss_fn_reg = torch.nn.MSELoss(size_average=True)
+    loss_fn_tmm = torch.nn.MSELoss(size_average=False)
+    loss_fn_reg = torch.nn.MSELoss(size_average=False)
     if args.cuda:
         loss_fn_tmm.cuda()
         loss_fn_reg.cuda()
@@ -168,12 +166,23 @@ def train(data, target, args):
         model.get_phi().parameters(),
         lr=args.learning_rate)
 
-    model.train()           # set model to training mode
+    # set model to training mode / torch code does keep the batchnorm
+    # layer active during this training!
+    model.get_phi().train() # set model to training mode
     model.get_rho().eval()  # make sure rho is in eval mode
+    # print model.get_rho().training
+    # print model.get_phi().training
+    # raw_input()
 
-    for epoch in range(1, args.epochs):
+    if args.cuda:
+        model.cuda()
+
+    for epoch in range(1, args.epochs+1):
         adjust_learning_rate(optimizer, epoch, args.learning_rate)
         epoch_loss = 0
+
+        epoch_loss_tmm = 0
+        epoch_loss_reg = 0
 
         for i, (src, tgt) in enumerate(train_loader):
 
@@ -184,22 +193,36 @@ def train(data, target, args):
             src_var = Variable(src)
             tgt_var = Variable(tgt)
 
+            optimizer.zero_grad()
+
             out_var = model(src_var)
 
             loss_tmm = loss_fn_tmm(out_var[1], tgt_var)
             loss_reg = loss_fn_reg(out_var[0], src_var)
+
+            #print loss_tmm.data[0], loss_reg.data[0]
+
             loss = 0.7*loss_reg + 0.3*loss_tmm
 
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             epoch_loss = epoch_loss + loss.data[0]
 
-        if args.verbose:
-            cprint('Loss [epoch=%.4d]=%.4f' % (epoch, epoch_loss), 'blue')
+            epoch_loss_tmm = epoch_loss_tmm + loss_tmm.data[0]
+            epoch_loss_reg = epoch_loss_reg + loss_reg.data[0]
 
-    return model.get_phi()
+
+        if args.verbose:
+            cprint('Loss [epoch=%.4d]=%.4f [%.4f / %.4f]' % (epoch, epoch_loss, epoch_loss_tmm, epoch_loss_reg), 'blue')
+
+            #params = model.get_rho().state_dict()
+            #print params['1.running_mean']
+            #print params['0.bias']
+            #raw_input()
+
+
+    return model
 
 
 def main(argv=None):
@@ -220,6 +243,7 @@ def main(argv=None):
 
     phi_dict = {}
     for key in data:
+
         phi_dict[key] = {
             'targets':  [],
             'model_files': [],
@@ -227,12 +251,13 @@ def main(argv=None):
             }
 
         for target in data[key]['targets']:
+
             if args.verbose:
                 cprint('Train [%.2f, %.2f] -> %.2f'  % (
                     data[key]['interval'][0],
                     data[key]['interval'][1],target), 'blue')
 
-            tmp_phi = train(
+            tmp_model = train(
                 data[key],
                 target,
                 args)
@@ -244,7 +269,7 @@ def main(argv=None):
 
             if not args.save is None:
                 torch.save(
-                    tmp_phi.state_dict(),
+                    tmp_model.get_phi().state_dict(),
                     os.path.join(args.save, out_model_file))
 
     with open(args.save + ".pkl", 'w') as fid:

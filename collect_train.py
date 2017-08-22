@@ -74,7 +74,6 @@ def setup_parser():
 
 
 def collect_data(img_meta, img_bbox_file, img_data_file, object_classes, ovl_thr=0.5, det_thr=0.5, exclude = ['__background__', '__others__']):
-   
     detections = {
         'is_valid'       : False,   # is detection entry valid
         'CNN_scores'     : None,    # detection scores / object class
@@ -121,11 +120,15 @@ def collect_data(img_meta, img_bbox_file, img_data_file, object_classes, ovl_thr
     attributes = []
 
     for cnt, i in enumerate(row_max): 
-        
         idx = np.argmax(IoU_scores[i,:])        
-
+        # idx holds the ground truth bbox index that overlaps
+        # most with the current proposal (which already overlaps 
+        # more than 0.5
+        
         tmp_sco = tmp['CNN_scores'][i,:]
         tmp_act = tmp['CNN_feature'][i,:]
+        
+        #print cnt, i, compute_SUNRGBD_attributes(img_meta, idx)
 
         # make sure detections below a certain detection threshold as well
         # as dections corresponding to the exclude object classes are not
@@ -153,7 +156,7 @@ def collect_data(img_meta, img_bbox_file, img_data_file, object_classes, ovl_thr
             gtb_idx = gtb_idx + [idx]
 
         attributes.append(compute_SUNRGBD_attributes(img_meta, idx))
-        
+
     if not detections['is_valid']:
         return detections
 
@@ -200,10 +203,10 @@ def main(argv=None):
             args.img_base, 
             img_files[cnt] + args.outfile_postfix)
         
-        if os.path.exists(outfile):
-           if args.verbose:
-               cprint("%s exists ... skipping" % outfile, 'blue')
-           continue   
+        #if os.path.exists(outfile):
+        #   if args.verbose:
+        #       cprint("%s exists ... skipping" % outfile, 'blue')
+        #   continue   
     
         t0 = time.time()
         data = collect_data(

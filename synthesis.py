@@ -75,7 +75,12 @@ def get_phi_models(phi_dict, val):
             for i, target in enumerate(targets):
                 model_files.append(
                     phi_dict[key]['model_files'][i])
-    return model_files
+
+    if len(model_files) == 0:
+        cprint('No valid model file found {}'.format(val),'blue')
+        return None
+    else:
+        return model_files
 
 
 def main(argv=None):
@@ -104,6 +109,8 @@ def main(argv=None):
                 args.phi_model + '.pkl'),'blue')
 
     for cnt, data_file in enumerate(data_file_list):
+
+        print cnt, data_file
 
         # load data file
         with open(data_file, 'r') as fid:
@@ -134,8 +141,8 @@ def main(argv=None):
         #   3) call phi for all available targets
         #
         syn_data = {}
-        for i in np.arange(data['CNN_activations'].shape[0]):
 
+        for i in np.arange(data['CNN_activations'].shape[0]):
             X = tmp[i,:].unsqueeze(0)
             if args.cuda:
                 X = X.cuda()
@@ -178,7 +185,7 @@ def main(argv=None):
                 'obj_idx': data['obj_idx'][i],
                 'CNN_activation_org': data['CNN_activations'][i,:].reshape(1,args.dim),
                 'CNN_activation_syn': CNN_activation_syn}
-
+            
         with open(img_file_list[cnt] + args.syn_postfix, 'w') as fid:
             pickle.dump(syn_data, fid, pickle.HIGHEST_PROTOCOL)
 
