@@ -32,6 +32,9 @@ files can we downloaded via
 
 - [SUNRGBD images](https://drive.google.com/file/d/0BxHF82gaPzgScVJ5LXVCWkRsaE0/view?usp=sharing)
 - [Finetuned VGG16 model](https://drive.google.com/file/d/0BxHF82gaPzgSY2gySFpQU0hJOVU/view?usp=sharing)
+- [Original SUNRGBD metadata (MATLAB)](https://drive.google.com/file/d/0BxHF82gaPzgSWFdPeEdSYnkxanM/view?usp=sharing)
+
+For the original SUNRGBD metadata, see also [here](http://rgbd.cs.princeton.edu/).
 
 We will assume, from now own, that the images are unpacked into `/data/images/`. The 
 finetuned model has to be put into the `<PATH_TO_FAST_RCNN_DIR>/data/fast_rcnn_models`
