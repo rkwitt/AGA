@@ -195,6 +195,7 @@ def select_one_shot(data, args):
         else:
             if args.omit_original:
                 data_trn_syn = np.vstack((data_trn_syn, syn_data))  # add AGA-syn. features
+                data_trn_one = np.vstack((data_trn_one, org_data))  # add original features
             else:
                 data_trn_syn = np.vstack((data_trn_syn, org_data))  # add original features
                 data_trn_syn = np.vstack((data_trn_syn, syn_data))  # add AGA-syn. features

@@ -110,8 +110,6 @@ def main(argv=None):
 
     for cnt, data_file in enumerate(data_file_list):
 
-        print cnt, data_file
-
         # load data file
         with open(data_file, 'r') as fid:
             data = pickle.load(fid)
@@ -185,7 +183,7 @@ def main(argv=None):
                 'obj_idx': data['obj_idx'][i],
                 'CNN_activation_org': data['CNN_activations'][i,:].reshape(1,args.dim),
                 'CNN_activation_syn': CNN_activation_syn}
-            
+
         with open(img_file_list[cnt] + args.syn_postfix, 'w') as fid:
             pickle.dump(syn_data, fid, pickle.HIGHEST_PROTOCOL)
 

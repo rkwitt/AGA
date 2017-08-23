@@ -262,13 +262,30 @@ This will run 100 trials of selecting one-shot instances from each object class
 features. Testing is done using all remaining original activations. *Note*: If you
 specify the `--omit_original` flag, the same experiment is performed, but training
 of the SVM and 1NN will only use synthetic data (without original samples).
-
-This should produce (using the settings from above) classification results
-similar to:
+adsf
+This should produce (using the settings from above) **classification results**
+(w/o AGA and w AGA) similar to:
 
 ```bash
-tbd.
+[00001] SVM (w/o AGA): 35.76 | [00001] SVM (w AGA): 47.19 | [00001] 1NN (w/o AGA): 32.12 | [00001] 1NN (w AGA): 43.27 |
+[00002] SVM (w/o AGA): 35.00 | [00002] SVM (w AGA): 40.06 | [00002] 1NN (w/o AGA): 35.14 | [00002] 1NN (w AGA): 40.48 |
+[00003] SVM (w/o AGA): 45.73 | [00003] SVM (w AGA): 42.14 | [00003] 1NN (w/o AGA): 42.80 | [00003] 1NN (w AGA): 41.28 |
+...
+Average: SVM (w/o AGA): 35.96 | SVM (w AGA): 39.64 | 1NN (w/o AGA): 35.31 | 1NN (w AGA): 37.61 |
 ```
+
+Lets run the same experiment **without** the one-shot instances included in the
+synthetic data:
+
+```bash
+[00001] SVM (w/o AGA): 35.76 | [00001] SVM (w AGA): 43.55 | [00001] 1NN (w/o AGA): 32.12 | [00001] 1NN (w AGA): 41.57 |
+[00002] SVM (w/o AGA): 41.57 | [00002] SVM (w AGA): 40.25 | [00002] 1NN (w/o AGA): 35.14 | [00002] 1NN (w AGA): 39.16 |
+[00003] SVM (w/o AGA): 38.64 | [00003] SVM (w AGA): 41.99 | [00003] 1NN (w/o AGA): 42.80 | [00003] 1NN (w AGA): 40.01 |
+...
+Average: SVM (w/o AGA): 33.50 | SVM (w AGA): 40.12 | 1NN (w/o AGA): 35.31 | 1NN (w AGA): 36.73 |
+```
+
+
 
 ## Differences to the paper
 
