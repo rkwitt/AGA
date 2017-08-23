@@ -3,7 +3,7 @@
 This repository contains a PyTorch implementation of
 
 ```
-@inproceedings{Dixit17a,	
+@inproceedings{Dixit17a,
 	author    = {M.~Dixit and R.~Kwitt and M.~Niethammer and N.~Vasconcelos},
 	title     = {AGA : Attribute-Guided Augmentation},
 	booktitle = {CVPR},
@@ -12,7 +12,7 @@ This repository contains a PyTorch implementation of
 
 - [Paper](http://www.svcl.ucsd.edu/publications/conference/2017/AGA/AGA_final.pdf)
 - [Talk](https://youtu.be/F3ThW3RLSAU?t=26)
-- Presentation (tbd).
+- [Presentation](https://drive.google.com/file/d/0BxHF82gaPzgSRVFXRWxHaTNjSlk/view?usp=sharing)
 
 ## Requirements
 
@@ -21,15 +21,27 @@ This repository contains a PyTorch implementation of
 To reproduce our results on SUNRGBD from scratch, we need to following packages
 
 - [Fast-RCNN](https://github.com/rbgirshick/fast-rcnn.git)
-- [SelectiveSearch](https://github.com/sergeyk/selective_search_ijcv_with_python0)
 - [PyTorch](http://pytorch.org/)
 - [LibLinear](https://github.com/ninjin/liblinear)
 - [scikit-learn](http://scikit-learn.org/stable)
 
+The *SelectiveSearch* code (downloadable) is included in this repository.
+The download script is shamelessly taken from Shaoqing Ren's GitHub
+[SPP_net](https://github.com/ShaoqingRen/SPP_net) repository. To use
+*SelectiveSearch*, start MATLAB and run
+
+```
+cd <PATH_TO_AGA_DIR>/3rdparty/selective_search
+fetch_selective_search
+img = imread('<PATH_TO_AGA_DIR>/datasets/SUNRGBD/image_00001.jpg');
+boxes = selective_search_boxes(img);
+save('<PATH_TO_AGA_DIR>/datasets/SUNRGBD/image_00001_ss_boxes.mat', 'boxes');
+```
+
 ### Data
 
 We provide a couple of files that have already prepared SUNRGBD data and a
-Fast-RCNN model, finetuned to a selection of SUNRGBD object classes. These
+finetuned (to a selection of 20 object classes) Fast-RCNN model. These
 files can we downloaded via
 
 - [SUNRGBD images](https://drive.google.com/file/d/0BxHF82gaPzgScVJ5LXVCWkRsaE0/view?usp=sharing)
@@ -38,17 +50,16 @@ files can we downloaded via
 
 For the original SUNRGBD metadata, see also [here](http://rgbd.cs.princeton.edu/).
 
-We will assume, from now own, that the images are unpacked into `/data/images/`. The 
+We will assume, from now own, that the images are unpacked into `/data/images/`. The
 finetuned model has to be put into the `<PATH_TO_FAST_RCNN_DIR>/data/fast_rcnn_models`
 folder.
 
 ## Running Fast-RCNN
 
-Say, you have unpacked the original SUNRGBD images to `/data/images`, i.e., the 
+Say, you have unpacked the original SUNRGBD images to `/data/images`, i.e., the
 directory should contain `image_00001.jpg` to `image_10335.jpg`. We also assume
-that you have run *SelectiveSearch* on each image (in MATLAB) and stored the 
-bounding box proposals for each image as `image_00001_ss_boxes.mat` in the same
-folder (i.e., `/data/images`).
+that you have run *SelectiveSearch* (see paragraph above) on each image
+(in MATLAB) and stored the bounding box proposals for each image as `image_00001_ss_boxes.mat` in the same folder (i.e., `/data/images`).
 
 First, we create a file which contains all image filenames without extension.
 
@@ -66,17 +77,24 @@ cd <PATH_TO_FAST_RCNN_DIR>
 python tools/object_features.py
 ```
 
-This generates (in `/data/images`), for each image, a file `<IMAGE_NAME>_bbox_features.mat` file
-which contains Fast-RCNN (FC7) features with detection scores for each object class that we 
-finetuned on.
+`object_features.py` uses the *SelectiveSearch* bounding boxes and
+create (in `/data/images`), for each image, a file
+`<IMAGE_NAME>_bbox_features.mat` which contains Fast-RCNN (default: FC7)
+features with detection scores for each object class.
 
 ## Collecting data for AGA training
 
+We create, for each image, a Python pickle file `<IMAGE_NAME>_fc7.pkl` that
+contains Fast-RCNN FC7 activations for all bounding boxes that overlap with
+the ground truth by IoU > 0.7 and detection scores for object classes > 0.5. Detections for `__background__` and `others` are excluded from this process.
+Further, these files contain annotations (per remaining bounding box) for
+*depth* and *pose*.
+
 ```bash
 cd <PATH_TO_AGA_DIR>
-python collect_train.py \ 
+python collect_train.py \
 	--img_meta datasets/SUNRGBD/SUNRGBD_meta.pkl \
-	--img_list /data/images/allimgs.txt \
+	--img_list /data/images/image_list.txt \
 	--img_base /data/images \
 	--bbox_postfix _ss_boxes.mat \
 	--data_postfix _bbox_features.mat \
@@ -84,62 +102,56 @@ python collect_train.py \
 	--object_class_file datasets/SUNRGBD/SUNRGBD_objects.pkl
 ```
 
-This creates, for each image, a Python pickle file `<IMAGE_NAME>_fc7.pkl` that contains
-Fast-RCNN FC7 activations for all bounding boxes that overlap with the ground truth by
-IoU > 0.7 and detection scores for object classes > 0.5. Detections for `__background__`
-and `others` are also excluded. Further, these files contain annotations (per remaining
-bounding box) for *depth* and *pose*.
+## Training the object attribute strength predictor
 
-## Training object attribute strength predictor
-
-To train the attribute strength predictor (here: for *depth*), we first need to collect
-adequate data:
+To train the attribute strength predictor (here: for *depth*), we first
+need to collect adequate trainign data:
 
 ```bash
+mkdir /data/output
 cd <PATH_TO_AGA_DIR>
- python collect_rho_data.py \
- 	--img_list /data/images/image_list.txt \
+python collect_rho_data.py \
+    --img_list /data/images/image_list.txt \
 	--img_base /data/images \
 	--beg_index 0 \
 	--end_index 5335 \
 	--attribute depth \
 	--data_postfix _fc7.pkl \
 	--save /data/output/rho_train_fc7.pkl \
-	--verbose 
+	--verbose
 ```
 
-This will create a file `/data/output/rho_train_fc7.pkl` which contains all relevant 
-training data, collected from images 0 through 5335 (essentially half of the data from
+This will create a file `/data/output/rho_train_fc7.pkl` which contains all relevant
+training data, collected from images 0 through 5335 (essentially, half of the data from
 SUNRGBD). `collect_rho_data.py` also, by default, samples activations from all object
-classes in a balanced manner (with sample size equal to the smallest number of activations
-per object class). We will later use the `--no_sampling` option to create evaluation 
-data for the attribute strength predictor.
+classes in a balanced manner (with sample size equal to the smallest number of activations per object class). We will later use the `--no_sampling` option to
+create evaluation data for the attribute strength predictor.
 
-Next, we can run the training (for 150 epochs):
+Next, we can train the regressor (a simple MLP, see paper) (for 150 epochs):
 
 ```bash
 cd <PATH_TO_AGA_DIR>
-python train_rho.py \ 
-	--log_file /data/output/rho_model_fc7.log \ 
-	--data_file /data/output/rho_train_fc7.pkl \ 
+python train_rho.py \
+	--log_file /data/output/rho_model_fc7.log \
+	--data_file /data/output/rho_train_fc7.pkl \
 	--save /data/output/rho_model_fc7.pht \
 	--epochs 150 \
 	--verbose
 ```
 
-By default, this trains with a learning rate of 0.001. The learning 
+By default, we train with an initial learning rate of 0.001. The learning
 schedule halves the learning rate every 50-th epoch.
 
-## Training the synthesis function
+## Training the synthesis function(s)
 
 Now that we have a trained attribute strength predictor, we can go ahead
-and train the synthesis function(s). For that, we first collect adequate
-training data. In detail, we collect activations from all objects with 
-attribute strenght within certain intervals. In case of depth, for example,
-these intervals are [0m,1m], [0.5m,1.5m], ..., [4.5m,5.5m], but other 
-binning strategies are of course possible. Our predefined interval file is 
+and train the synthesis function(s). For that, we again collect adequate
+training data first. In detail, we collect activations from all objects with
+attribute strengths within certain intervals. In case of *depth*, for example,
+these intervals are [0m,1m], [0.5m,1.5m], ..., [4.5m,5.5m], but other
+binning strategies are of course possible. Our predefined interval file is
 `<PATH_TO_AGA_DIR>/datasets/SUNRGBD/SUNRGBD_depth_intervals.txt`. We also
-ensure to only use data from objects that have at least 100 activations 
+ensure to only use data from objects that have at least 100 activations
 in an interval.
 
 ```bash
@@ -154,23 +166,67 @@ python collect_phi_data.py \
 	--attribute depth \
 	--save /data/output/phi_train_fc7.pkl \
 	--min_count 100 \
-	--verbose 
+	--verbose
 ```
 
-This will create a file `/data/output/phi_train_fc7.pkl` that will hold 
-information about all trained models (stored in the folder `/data/output/phi_train_fc7`).
+This will create a file `/data/output/phi_train_fc7.pkl` that will hold
+information about all trained models. The models are stored in the
+corresponding folder `/data/output/phi_train_fc7`.
+
+Before training the synthesis functions, we pretrain using all available
+data that we previously collected for training the regressor. This step
+simply trains the encoder-decoder to map from FC7 activations to FC7
+activations. We found this to be beneficial, as training the synthesis
+functions can be tricky if little data is available per interval.
+
+```bash
+cd <PATH_TO_AGA_DIR>
+python pretrain_phi.py \
+    --data_file /data/output/rho_train_fc7.pkl \
+    --epochs 150 \
+    --learning_rate 0.01 \
+    --save /data/output/phi_model_fc7_pretrained.pht \
+    --verbose
+```
+
+Then, we can start the *actual* training:
+
+```bash
+cd <PATH_TO_AGA_DIR>
+python train_phi.py \
+    --pretrained_rho /data/output/rho_model_fc7.pht \
+    --pretrained_phi /data/output/phi_model_fc7_pretrained.pht \
+    --data_file /data/output/phi_train_fc7.pkl \
+    --save /data/output/phi_model_fc7 \
+    --learning_rate 0.01  \
+    --epochs 150 \
+    --verbose
+```
+
+The trained models will be dumped to `/data/output/phi_model_fc7` and a
+metadata file `/data/output/phi_model_fc7.pkl` will be created.
 
 ## Synthesis via AGA
 
-To demonstrate synthesis, we reproduce the results from Table 3 of the [paper](http://www.svcl.ucsd.edu/publications/conference/2017/AGA/AGA_final.pdf). For 
-this, we provide a selection of images from SUNRGBD (left-out during training)
-that contain objects that we have never seen before. In particular, 
-*picture, whiteboard, fridge, counter, books, stove, cabinet, printer, computer, 
-ottoman*. The data can be downloaded from:
+To demonstrate synthesis, we reproduce the results from Table 3 of the [paper](http://www.svcl.ucsd.edu/publications/conference/2017/AGA/AGA_final.pdf).
+For convenience, we provide a selection of images from SUNRGBD (left-out during training of the regressor + synthesis) that contain objects that we have never
+seen before. In particular, the object classes are:
+*picture, whiteboard, fridge, counter, books, stove, cabinet, printer, computer,
+ottoman*. This is the *T0* set from the paper. The data can be downloaded from
 
 - [Data for T0 object class set](https://drive.google.com/file/d/0BxHF82gaPzgSdEd0RTVmRXdyNDQ/view?usp=sharing)
 
-We next, synthesize FC7 activations (using our synthesis functions for attribute *depth*):
+We next synthesize FC7 activations (using our trained synthesis functions for attribute *depth*). To do so, we collect all data and then synthesize.
+
+```bash
+cd <PATH_TO_AGA_DIR>
+python collect_eval.py \
+    --img_list /data/T0/image_list.txt \
+    --img_base /data/T0 \
+    --data_postfix _bbox_features.mat \
+    --label_postfix _ss_labels.mat \
+    --object_class_file datasets/SUNRGBD/SUNRGBD_one_shot_classes_T0.pkl --outfile_postfix _fc7.pkl
+```
 
 ```bash
 cd <PATH_TO_AGA_DIR>
@@ -181,20 +237,20 @@ python synthesis.py \
 	--rho_model /data/output/rho_model_fc7.pht \
 	--data_postfix _fc7.pkl \
 	--syn_postfix _fc7_AGA_depth.pkl
-	--verbose 
+	--verbose
 ```
-This will create additional files `<IMAGE_NAME>_fc7_AGA_depth.pkl` for ever image in `/data/T0`
-that contain the synthesized features.
+This will create synthesis files `<IMAGE_NAME>_fc7_AGA_depth.pkl` for
+ever image in `/data/T0` containing the synthesized features.
 
 ## Experiments
 
 ### One-shot object recognition
 
-Finally, we can run the one-shot object recognition experiment from Table 3 of the paper. 
+Finally, we can run the one-shot object recognition experiment from Table 3 of the paper.
 
 ```bash
 cd <PATH_TO_AGA_DIR>/experiments
-python SUNRGBD_one_shot.py \ 
+python SUNRGBD_one_shot.py \
 	--img_list /data/T0/image_list.txt \
 	--img_base /data/T0 \
 	--data_postfix _fc7_AGA_depth.pkl \
@@ -202,24 +258,24 @@ python SUNRGBD_one_shot.py \
 ```
 This will run 100 trials of selecting one-shot instances from each object class
 (in T0 we have 10 classes) and training a linear SVM and a 1-NN classifier using
-(1) only one-shot instances as well as (2) one-shot instances *and* synthesized 
-features. Testing is done using all remaining original activations. *Note*: If you 
-specify the `--omit_original` flag, the same experiment is performed, but training 
+(1) only one-shot instances as well as (2) one-shot instances *and* synthesized
+features. Testing is done using all remaining original activations. *Note*: If you
+specify the `--omit_original` flag, the same experiment is performed, but training
 of the SVM and 1NN will only use synthetic data (without original samples).
 
+This should produce (using the settings from above) classification results
+similar to:
 
+```bash
+tbd.
+```
 
+## Differences to the paper
 
+1. In the paper, we do not use an adaptive learning
+rate strategy. Here, for all training, we half the learning rate every 50-th
+epoch.
 
-
-
-
-
-
-
-
-
-
-
-
-
+2. In addition to the results from the paper, we now also provide results for a
+1-NN classifier as this *more directly* assesses the quality of the synthesis
+results.
