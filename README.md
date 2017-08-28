@@ -244,22 +244,29 @@ ever image in `/data/T0` containing the synthesized features.
 
 ## Experiments
 
-### One-shot object recognition
+### One/Few-shot object recognition
 
-Finally, we can run the one-shot object recognition experiment from Table 3 of the paper.
+Finally, we can run the one/few-shot object recognition experiment(s) from Table 3 of the paper.
 
 ```bash
 cd <PATH_TO_AGA_DIR>/experiments
-python SUNRGBD_one_shot.py \
+python SUNRGBD_few_shot.py \
 	--img_list /data/T0/image_list.txt \
 	--img_base /data/T0 \
 	--data_postfix _fc7_AGA_depth.pkl \
 	--runs 100
+	--shots 1
 ```
 This will run 100 trials of selecting one-shot instances from each object class
 (in T0 we have 10 classes) and training a linear SVM and a 1-NN classifier using
 (1) only one-shot instances as well as (2) one-shot instances *and* synthesized
-features. Testing is done using all remaining original activations. *Note*: If you
+features. Testing is done using all remaining original activations. The `--shots`
+argument allows you to specify how many original samples you want to use for the
+experiments. If, for example, you specify `--shots 5`, you can run a 5-shot 
+object-recognition experiment. In that case, AGA-synthesized results will be based
+on the original 5 samples per class + AGA-synthesized features.
+
+*Note*: If you
 specify the `--omit_original` flag, the same experiment is performed, but training
 of the SVM and 1NN will only use synthetic data (without original samples).
 adsf
