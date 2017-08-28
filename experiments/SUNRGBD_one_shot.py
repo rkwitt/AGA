@@ -1,5 +1,7 @@
 """One-shot object recognition experiments with AGA.
 
+NOTE: this code has been replaced by SUNRGBD_few_shot.py and will be removed soon!
+
 Author(s): rkwitt, mdixit, 2017
 """
 
