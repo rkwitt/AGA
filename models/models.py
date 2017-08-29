@@ -4,7 +4,7 @@ import torch
 def phi(D_in, dropout_prob=0.25):
 
     D_h0  = 256
-    D_h1  = 32 
+    D_h1  = 32
 
     model = torch.nn.Sequential(
         torch.nn.Linear(D_in, D_h0),
@@ -26,7 +26,7 @@ def phi(D_in, dropout_prob=0.25):
 
 
 def rho(D_in):
-    D_h0  = 64  
+    D_h0  = 64
     D_out = 1
 
     model = torch.nn.Sequential(

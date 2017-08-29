@@ -6,6 +6,8 @@ Author: rkwitt, mdixit (2017)
 import torch
 from torch.autograd import Variable
 import torch.utils.data as data_utils
+import statsmodels.api as sm
+
 
 from models import models
 
@@ -17,58 +19,72 @@ import h5py
 import numpy as np
 import sys
 
+from sklearn.metrics import r2_score
+
 
 def setup_parser():
     parser = argparse.ArgumentParser(description='Evaluation of attribute strength regressor')
     parser.add_argument(
         "--dim",
-        type=int, 
-        default=4096, 
+        type=int,
+        default=4096,
         help="dimensionality of features (default: 4096)")
     parser.add_argument(
-        "--data_file",          
-        metavar='', 
+        "--data_file",
+        metavar='',
         help="data file to use")
     parser.add_argument(
-        "--object_file",          
-        metavar='', 
+        "--object_file",
+        metavar='',
         help="object class information")
     parser.add_argument(
-        "--rho_model",          
-        metavar='', 
+        "--rho_model",
+        metavar='',
         help="model to use")
     parser.add_argument(
-        "--batch_size",         
-        metavar='', 
-        type=int, 
-        default=300, 
+        "--batch_size",
+        metavar='',
+        type=int,
+        default=300,
         help="batch size for training (default: 300)")
     parser.add_argument(
-        '--no_cuda',            
-        action='store_true', 
-        default=False, 
+        '--no_cuda',
+        action='store_true',
+        default=False,
         help='disables CUDA training (default: False)')
     parser.add_argument(
-        "--verbose",            
-        action="store_true", 
-        default=False, 
-        dest="verbose", 
+        "--verbose",
+        action="store_true",
+        default=False,
+        dest="verbose",
         help="enables verbose output")
     return parser
-    
+
 
 def show_stats(info, objects):
-    mae = info[:,0]
-    cid = info[:,1] 
+    mae = info[:,0] # absolute differences
+    cid = info[:,1] # category indices
+    out = info[:,2] # network outputs
+    tgt = info[:,3] # target values
+
     u, counts = np.unique(cid,return_counts=True)
 
     for val in u:
         idx = np.where(cid==val)[0]
-        cprint('{:20s}: {:.2f} [m]'.format(
-            objects[int(val)], mae[idx].mean()), 'blue')
 
-    cprint('{:20s}: {:.2f} [m]'.format(
-            'AVERAGE', mae.mean()), 'blue')
+        model = sm.OLS(tgt[idx], sm.add_constant(out[idx]))
+        lin_res = model.fit()
+
+        cprint('{:20s}: {:.4f} / {:.4f} / {:.4f}'.format(
+            objects[int(val)],
+            mae[idx].mean(),
+            r2_score(out[idx], tgt[idx]),
+            lin_res.rsquared), 'blue')
+
+    model = sm.OLS(tgt, sm.add_constant(out))
+    lin_res = model.fit()
+    cprint('{:20s}: {:.4f} / {:.4f} / {:.4f}'.format(
+            'AVERAGE', mae.mean(), r2_score(out, tgt), lin_res.rsquared), 'blue')
 
 
 def main(argv=None):
@@ -94,7 +110,7 @@ def main(argv=None):
     N_data_feat, D_data_feat = data_feat.shape
     N_data_attr, D_data_attr = data_attr.shape
 
-    assert N_data_feat == N_data_attr 
+    assert N_data_feat == N_data_attr
 
     if args.verbose:
         cprint('Data: (%d x %d)' % (N_data_feat, D_data_feat), 'blue')
@@ -105,8 +121,8 @@ def main(argv=None):
 
     eval = data_utils.TensorDataset(data_feat_th, data_attr_th)
     eval_loader = data_utils.DataLoader(
-        eval, 
-        batch_size=args.batch_size, 
+        eval,
+        batch_size=args.batch_size,
         shuffle=False)
 
     model = models.rho(args.dim)
@@ -115,9 +131,9 @@ def main(argv=None):
         model.cuda()
     model.eval()
 
-    info = np.zeros((data_feat.shape[0],2))
+    info = np.zeros((data_feat.shape[0],4))
     for i, (src, tgt) in enumerate(eval_loader):
-    
+
         if args.cuda:
             src = src.cuda()
             tgt = tgt.cuda()
@@ -133,13 +149,10 @@ def main(argv=None):
 
         info[i0:i1,0] = tmp_mae.ravel()
         info[i0:i1,1] = data_oidx[i0:i1]
+        info[i0:i1,2] = out_var.cpu().data.numpy().ravel()
+        info[i0:i1,3] = tgt_var.cpu().data.numpy().ravel()
 
     show_stats(info, object_classes)
 
 if __name__ == "__main__":
     main()
-
-
-
-
-    

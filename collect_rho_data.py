@@ -1,8 +1,9 @@
+
 """Collect training data for attribute strength predictor (rho) training.
 
 Author: rkwitt, mdixit (2017)
 """
-  
+
 from misc.tools import build_file_list, balanced_sampling, compute_num_activations
 
 from termcolor import colored, cprint
@@ -19,45 +20,50 @@ import os
 def setup_parser():
     parser = argparse.ArgumentParser(description="Collect data for training of rho.")
     parser.add_argument(
-        "--img_list",           
-        metavar='', 
+        "--img_list",
+        metavar='',
         help="file with image filenames (no extension)")
     parser.add_argument(
-        "--img_base",           
-        metavar='', 
+        "--img_base",
+        metavar='',
         help="base directory of image files")
     parser.add_argument(
-        "--attribute",          
-        metavar='', 
+        "--attribute",
+        metavar='',
         help="attribute name")
     parser.add_argument(
-        "--save", 
-        metavar='', 
+        "--save",
+        metavar='',
         help='name of the (pickle) output file with balanced data')
     parser.add_argument(
-        "--data_postfix",       
-        metavar='', 
+        "--data_postfix",
+        metavar='',
         help="postfix of detection files")
     parser.add_argument(
-        "--beg_index",          
-        metavar='', 
-        type=int, 
+        "--beg_index",
+        metavar='',
+        type=int,
         help="start index from which to extract data")
     parser.add_argument(
-        "--end_index",          
-        metavar='', 
-        type=int, 
+        "--end_index",
+        metavar='',
+        type=int,
         help="stop index from which to extract data")
     parser.add_argument(
-        "--verbose",            
-        action="store_true", 
-        default=False, 
-        dest="verbose", 
+        "--verbose",
+        action="store_true",
+        default=False,
+        dest="verbose",
         help="berbose output")
     parser.add_argument(
-        '--no_sampling',            
-        action='store_true', 
-        default=False, 
+        '--remove_suffix',
+        action='store_true',
+        default=False,
+        help='removes suffix from files in file list (default: False)')
+    parser.add_argument(
+        '--no_sampling',
+        action='store_true',
+        default=False,
         help='disables balanced sampling (default: False)')
     return parser
 
@@ -72,7 +78,8 @@ def main(argv=None):
     file_list = build_file_list(
         args.img_list,
         args.img_base,
-        args.data_postfix)[args.beg_index:args.end_index]
+        args.data_postfix,
+        remove_suffix=args.remove_suffix)[args.beg_index:args.end_index]
 
     assert len(file_list) == args.end_index - args.beg_index
 
@@ -82,7 +89,7 @@ def main(argv=None):
     data_attr = None
 
     num = compute_num_activations(file_list)
-    
+
     feat_cnt = 0
     for cnt, file_name in enumerate(file_list):
 
@@ -94,17 +101,20 @@ def main(argv=None):
         if not data['is_valid']:
             continue
 
+        # make into matrix
+        data['CNN_activations'] = np.asmatrix(data['CNN_activations'])
+
         if not data_init:
             data_feat = np.zeros((num, data['CNN_activations'].shape[1]))
             data_oidx = np.zeros((num,))
             data_attr = np.zeros((num,))
             data_init = True
-        
+
         N_current = data['CNN_activations'].shape[0]
         data_feat[feat_cnt:feat_cnt+N_current,:] = data['CNN_activations']
         data_oidx[feat_cnt:feat_cnt+N_current] = data['obj_idx']
-        
-        assert len(data['attributes']) == N_current        
+
+        assert len(data['attributes']) == N_current
         for j, tmp in enumerate(data['attributes']):
             data_attr[feat_cnt+j] = tmp[args.attribute]
         feat_cnt += N_current
@@ -112,7 +122,7 @@ def main(argv=None):
     if args.verbose:
         cprint('Total amount of data (%d x %d)' % data_feat.shape, 'blue')
 
-    if args.sampling:      
+    if args.sampling:
         sample_arr = balanced_sampling(data_oidx)
         sample_idx = np.concatenate(sample_arr).ravel()
 

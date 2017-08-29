@@ -166,11 +166,19 @@ def select_few_shot(data, args):
 
         all_indices = np.arange(len(data[obj_id]))
 
-        few_indices = np.random.choice(
-            len(data[obj_id]),
-            size=args.shots,
-            replace=False)
-
+        while True:
+            valid = True
+            few_indices = np.random.choice(
+                len(data[obj_id]),
+                size=args.shots,
+                replace=False)
+            for fidx in few_indices:
+                tmp_syn_data, tmp_org_data = data[obj_id][fidx]
+                if tmp_syn_data is None:
+                    valid = False
+            if valid: 
+                break
+                  
         prev_few_size = data_trn_few.shape[0]
         prev_syn_size = data_trn_syn.shape[0]
 
@@ -301,9 +309,9 @@ def main(argv=None):
 
     stats = ResultStatistics()
     for run_id in np.arange(args.runs):
-
+        
         data = select_few_shot(data_source, args)
-
+        
         tmp_result_one = eval(
             data['data_trn_few'],
             data['data_trn_few_lab'],

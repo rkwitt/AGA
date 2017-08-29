@@ -154,16 +154,16 @@ def main(argv=None):
     model.eval()
     all = Variable(data_feat_th.cuda())
     out = model(all).cpu()
-    
+
     #Z = np.zeros((out.data.numpy().shape[0],2))
     #Z[:,0] = out.data.numpy().ravel()
     #Z[:,1] = data_attr_th.numpy().ravel()
     #np.savetxt('/tmp/rho_pred.txt', Z, delimiter=' ')
     #print out.data.numpy(), data_attr_th.numpy()
-    
+
     mae = np.abs(out.data.numpy() - data_attr_th.numpy()).mean()
     if args.verbose:
-        cprint('MAE [train]=%.2f [m]' % mae, 'blue')
+        cprint('MAE [train]=%.2f' % mae, 'blue')
 
     if not args.save is None:
         torch.save(model.state_dict(), args.save)
